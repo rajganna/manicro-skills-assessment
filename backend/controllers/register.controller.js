@@ -52,7 +52,9 @@ exports.userRegister = async (req, res) => {
         if (getUsersaddress.length > 0) {
             const jwtToken = jwt.sign({
                 id: getUsersaddress[0].id,
-                address: getUsersaddress[0].address
+                address: getUsersaddress[0].address,
+                is_admin: getUsersaddress[0].is_admin === 1 ? 1 : 0,
+                role: getUsersaddress[0].is_admin === 1 ? 'cpadmin' : 'user',
 
             }, config.JWT_SECRET_KEY, {
                 expiresIn: config.SESSION_EXPIRES_IN
@@ -93,7 +95,9 @@ exports.userRegister = async (req, res) => {
             if (saveUserDetails) {
                 const jwtToken = jwt.sign({
                     id: saveUserDetails.insertId,
-                    address: req.body.address
+                    address: req.body.address,
+                    is_admin: 0,
+                    role: 'user'
 
                 }, config.JWT_SECRET_KEY, {
                     expiresIn: config.SESSION_EXPIRES_IN
@@ -121,21 +125,6 @@ exports.userRegister = async (req, res) => {
         next(error);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 exports.getTransactionHistory = async (req, res) => {
     try {
@@ -701,8 +690,8 @@ exports.userBUSDDepositCheck = async () => {
     logger.debug('BUSD deposit check completed');
     } catch (error) {
         // If database is down or unreachable, avoid spamming stack traces
-        if (error.code === 'ECONNREFUSED') {
-            logger.warn('Skipping userBUSDDepositCheck: database connection refused');
+        if (error.code === 'ECONNREFUSED' || error.code === 'ER_NO_SUCH_TABLE' || error.code === 'ER_BAD_DB_ERROR') {
+            logger.warn(`Skipping userBUSDDepositCheck: ${error.code}`);
             return;
         }
         logger.error('Error running userBUSDDepositCheck cron:', error);

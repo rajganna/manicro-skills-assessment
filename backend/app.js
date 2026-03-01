@@ -7,6 +7,7 @@ const logger = require('./utils/logger');
 const socketService = require('./services/socket.service');
 const { routes } = require('./routes/routes');
 const errorMiddleware = require('./middleware/error.middleware');
+const { ensureBaseTables } = require('./utils/schema');
 
 // Initialize cron jobs
 require('./services/cron.service');
@@ -32,6 +33,11 @@ app.set('env', config.nodeEnv);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Ensure core schema exists for auth + deposit checks.
+ensureBaseTables().catch((error) => {
+  logger.warn('Schema bootstrap failed during startup:', error?.code || error?.message || error);
+});
 
 // Health check
 app.get('/', (req, res) => {
